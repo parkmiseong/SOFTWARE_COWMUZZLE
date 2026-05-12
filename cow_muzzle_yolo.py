@@ -3,7 +3,7 @@
 YOLOv8을 활용한 소 얼굴 비문 탐지 모델 학습
 - yolov8n.pt 불러오기 : YOLOv8의 가장 작은 모델
 - data.yaml 파일의 경로 설정
-- 모델 학습 -> 결과물은 'CowMuzzle_Project/YOLO_Detector' 폴더에 저장
+- 모델 학습 -> 결과물은 'cow_muzzle_yolo' 폴더에 저장
 '''
 #라이브러리
 import os
