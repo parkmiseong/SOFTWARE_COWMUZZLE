@@ -28,7 +28,7 @@ print("YOLOv8 비문 탐지 모델 학습 시작")
 #모델 학습
 results = model.train(
     data=data_yaml_path,        #data.yaml 파일 경로
-    epochs=10,                  #데이터셋 반복 학습 횟수 -> 시간이 너무 오래 걸리는 관계로 10으로 설정하게 됨
+    epochs=50,                  #데이터셋 반복 학습 횟수
     imgsz=640,                  #학습에 사용할 이미지 크기
     batch=16,                   #배치 크기
     name='cow_muzzle_yolo'      #학습 결과가 저장될 폴더명
