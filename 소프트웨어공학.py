@@ -16,8 +16,8 @@ image_path = 'test_images/cow_face.jpg'
 img = cv2.imread(image_path)
 
 # 3. 비문(코) 영역 탐지 (AI 예측 수행)
-# conf=0.5: 50% 이상 비문이라고 확신하는 경우에만 결과 반환
-results = yolo_model.predict(source=img, conf=0.5, verbose=False)
+# conf=0.8: 80% 이상 비문이라고 확신하는 경우에만 결과 반환
+results = yolo_model.predict(source=img, conf=0.8, verbose=False)
 
 # 4. 탐지된 영역 크롭 및 저장
 output_dir = 'noses_yolo/'
