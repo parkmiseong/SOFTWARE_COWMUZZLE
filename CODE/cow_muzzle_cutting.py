@@ -3,7 +3,7 @@ import os                       # 파일 생성 등을 위한 라이브러리
 import cv2                      # 이미지 처리 라이브러리
 from ultralytics import YOLO    # YOLO 모델을 사용하기 위한 라이브러리
 
-# cow_muzzle_yolo를 통해 얻은 YOLOv8 모델 로드
+## cow_muzzle_yolo를 통해 얻은 YOLOv8 모델 로드
 model_path = './DATA/runs/detect/cow_muzzle_yolo-3/weights/best.pt'
 yolo_model = YOLO(model_path)
 
