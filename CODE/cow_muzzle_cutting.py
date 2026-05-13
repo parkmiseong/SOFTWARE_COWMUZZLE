@@ -1,3 +1,4 @@
+# cow_muzzle_cutting.py
 ## 라이브러리 임포트
 import os                       # 파일 생성 등을 위한 라이브러리
 import cv2                      # 이미지 처리 라이브러리
