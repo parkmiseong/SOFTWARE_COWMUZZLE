@@ -1,21 +1,25 @@
 ## 라이브러리 임포트
-import os               # 파일 생성 등을 위한 라이브러리
-import cv2              # 이미지 처리 라이브러리
-import numpy as np      # 수치 계산 라이브러리
-from matplotlib import pyplot as plt  # 이미지 시각화 라이브러리
+import os                               # 파일 생성 등을 위한 라이브러리
+import cv2                              # 이미지 처리 라이브러리
+import numpy as np                      # 수치 계산 라이브러리
+from matplotlib import pyplot as plt    # 이미지 시각화 라이브러리
 
 ## 디렉토리 경로 설정
 # 전처리할 이미지 불러오기
 input_image_directory = './DATA/noses_yolo'
-
 # 전처리 완료 후 저장할 디렉토리 생성
 output_image_directory = './DATA/noses_binary'
+# 출력 폴더가 존재하지 않을 경우 생성
 os.makedirs(output_image_directory, exist_ok=True)
 
-## 이미지를 디렉토리에서 한장씩 불러오기
+## 이미지를 디렉토리에서 불러오기
+# 이미지의 확장자가 .jpg, .png인 파일만 리스트에 포함
 image_files = [f for f in os.listdir(input_image_directory) if f.endswith('.jpg') or f.endswith('.png')]
+
 # 이미지 읽기 실패 횟수 카운트
 fail = 0
+
+## 이미지 처리(흑백 변환 및 이진화)
 print("[이미지 처리 시작]")
 for image_file in image_files:
     # 이미지 경로 불러오기
@@ -42,4 +46,3 @@ print("[이미지 처리 완료]")
 print("이미지 읽기 실패 횟수 :", fail)
 print("이미지 처리 완료 횟수 : ", len(image_files) - fail)
 print("총 이미지 수 : ", len(image_files))
-    
