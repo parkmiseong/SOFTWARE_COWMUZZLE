@@ -1,49 +1,118 @@
-# cow_muzzle_binary.py
-## 라이브러리 임포트
-import os                               # 파일 생성 등을 위한 라이브러리
-import cv2                              # 이미지 처리 라이브러리
-import numpy as np                      # 수치 계산 라이브러리
-from matplotlib import pyplot as plt    # 이미지 시각화 라이브러리
+## 라이브러리 임포트 ##
+import os
+import cv2
+import numpy as np
+from ultralytics import YOLO
 
-## 디렉토리 경로 설정
-# 전처리할 이미지 불러오기
-input_image_directory = './DATA/noses_yolo'
-# 전처리 완료 후 저장할 디렉토리 생성
-output_image_directory = './DATA/noses_binary'
-# 출력 폴더가 존재하지 않을 경우 생성
-os.makedirs(output_image_directory, exist_ok=True)
+## 경로 설정 ##
+input_directory = './DATA/muzzle_dataset'
 
-## 이미지를 디렉토리에서 불러오기
-# 이미지의 확장자가 .jpg, .png인 파일만 리스트에 포함
-image_files = [f for f in os.listdir(input_image_directory) if f.endswith('.jpg') or f.endswith('.png')]
+# 최종 저장 폴더
+output_directory = './DATA/processed_dataset'
 
-# 이미지 읽기 실패 횟수 카운트
-fail = 0
+# 출력 폴더 생성
+os.makedirs(output_directory, exist_ok=True)
 
-## 이미지 처리(흑백 변환 및 이진화)
-print("[이미지 처리 시작]")
-for image_file in image_files:
-    # 이미지 경로 불러오기
-    image_path = os.path.join(input_image_directory, image_file)    # input_image_directory + '/' + image_file
-    # 이미지 읽기 (그레이스케일로 읽기 -> 이진화를 위해서 그레이스케일로 읽어오기)
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+## YOLO 모델 로드 ##
+model_path = './DATA/best.pt'
+yolo_model = YOLO(model_path)
 
-    # 이미지 읽기 실패 시, 오류 메시지 출력 및 실패 횟수 증가
-    if image is None:
-        print("이미지 읽기 실패 :", image_path)
-        fail += 1
-    else:
-        #ret, binary_image = cv2.threshold(image, 80, 255, cv2.THRESH_BINARY)
-        # 적응형 이진화를 이용하여 이미지를 검정과 흰색으로만 이루어진 이진 이미지로 변환 -> 비문 패턴 강조
-        binary_image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
+
+## 소 비문 추출 + 이진화 + 저장 ##
+def process_cow_muzzle_dataset(input_dir, output_dir):
+
+    # 통계 변수
+    total_images = 0
+    total_saved = 0
+    detect_fail = 0
+    read_fail = 0
+
+    print("\n[소 비문 데이터셋 처리 시작]")
+
+    # 모든 이미지 탐색
+    image_files = []
+
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                image_path = os.path.join(root, file)
+                image_files.append(image_path)
+
+    print(f"총 이미지 수 : {len(image_files)}")
+
+    ## 이미지 처리 ##
+    for image_path in image_files:
+        total_images += 1       # 전체 이미지 수 증가
+        # 개체 폴더 이름 추출
+        cattle_id = os.path.basename(os.path.dirname(image_path))
+        # 저장 폴더 생성
+        cattle_output_dir = os.path.join(output_dir, cattle_id)
+        os.makedirs(cattle_output_dir, exist_ok=True)
+
+        # 이미지 읽기
+        img = cv2.imread(image_path)
+
+        # 읽기 실패
+        if img is None:
+            print(f"[읽기 실패] {image_path}")
+            read_fail += 1
+            continue
+
+        ## YOLO 비문 탐지 ##
+        results = yolo_model.predict(source=img, conf=0.25, verbose=False)
+        boxes = results[0].boxes
+
+        # 탐지 실패
+        if len(boxes) == 0:
+            detect_fail += 1
+            continue
+
+        ## 가장 큰 바운딩 박스 선택 ##
+        largest_box = None
+        largest_area = 0
+
+        for box in boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            area = (x2 - x1) * (y2 - y1)
+            if area > largest_area:
+                largest_area = area
+                largest_box = (x1, y1, x2, y2)
+
+        # 자른 이미지 추출
+        x1, y1, x2, y2 = largest_box
+        cropped_nose = img[y1:y2, x1:x2]
+
+        ## 이진화 처리 ##
+        # 그레이스케일 변환
+        gray_image = cv2.cvtColor(cropped_nose,cv2.COLOR_BGR2GRAY)
+        # 이미지 이진화
+        binary_image = cv2.adaptiveThreshold(gray_image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,25,2)
         # 이미지 반전
         reverse_image = cv2.bitwise_not(binary_image)
-        # 모폴로지 연산을 사용하여 노이즈 제거 및 비문 패턴 강조
-        process_image = cv2.morphologyEx(reverse_image, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-        # 전처리된 이미지 저장(256*256 크기로 재조정)
-        cv2.imwrite(os.path.join(output_image_directory, image_file), cv2.resize(process_image,(256,256)))
+        # 모플 연산으로 노이즈 제거
+        process_image = cv2.morphologyEx(reverse_image,cv2.MORPH_CLOSE,np.ones((3, 3), np.uint8))
+        # 이미지 크기 조정(128x128)
+        resized_image = cv2.resize(process_image,(128, 128))
+        
+        ## 저장 이름 ##
+        original_name = os.path.splitext(os.path.basename(image_path))[0]
+        save_name = f"{original_name}.png"
+        save_path = os.path.join(cattle_output_dir, save_name)
 
-print("[이미지 처리 완료]")
-print("이미지 읽기 실패 횟수 :", fail)
-print("이미지 처리 완료 횟수 : ", len(image_files) - fail)
-print("총 이미지 수 : ", len(image_files))
+        ## 저장 ##
+        cv2.imwrite(save_path, resized_image)
+        total_saved += 1
+
+    ## 결과 출력 ##
+    print("\n==============================")
+    print("[데이터셋 처리 완료]")
+    print("==============================")
+
+    print(f"총 이미지 수      : {total_images}")
+    print(f"저장 완료 수      : {total_saved}")
+    print(f"이미지 읽기 실패  : {read_fail}")
+    print(f"비문 탐지 실패    : {detect_fail}")
+
+
+## 메인 ##
+process_cow_muzzle_dataset(input_directory,output_directory)
